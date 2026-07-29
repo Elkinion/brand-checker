@@ -39,7 +39,7 @@ footer { visibility: hidden; }
              align-items:center; column-gap:14px;
              margin:-1rem -1rem 1.25rem -1rem; border-radius:0 0 12px 12px;
              box-shadow:0 2px 6px rgba(0,0,0,.08); }
-.bc-header img { height:40px; width:auto; display:block; }
+.bc-header img { height:60px; width:auto; display:block; }
 .bc-header .bc-header-left  { justify-self:start; }
 .bc-header .bc-header-right { justify-self:end; }
 .bc-header .bc-header-center { text-align:center; }
