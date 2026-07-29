@@ -34,32 +34,26 @@ def image_dimensions(path: str | Path) -> tuple[int, int] | None:
         return None
 
 
-def detect_kv_type_from_image(path: str | Path) -> str:
-    """
-    Heurística por aspect ratio (w/h). Solo mira geometría, no contenido.
-    Se usa como default cuando el usuario elige "Auto".
-    """
+def ratio_category(w: int, h: int) -> str:
+    if not h:
+        return "square"
+    r = w / h
+    if r >= 2.5:
+        return "ultrawide"
+    if r >= 1.4:
+        return "landscape"
+    if r >= 0.85:
+        return "square"
+    if r >= 0.65:
+        return "portrait_std"
+    return "portrait_tall"
+
+
+def image_ratio_category(path: str | Path) -> str | None:
     dim = image_dimensions(path)
     if not dim:
-        return "tactico_pop"
-    w, h = dim
-    if h == 0:
-        return "tactico_pop"
-    ratio = w / h  # >1 horizontal, <1 vertical
-
-    if ratio >= 2.5:
-        return "ooh_valla"                 # Ultra-wide (vallas 3x1, 4x1)
-    if 1.4 <= ratio < 2.5:
-        return "social_feed"               # Horizontal (16:9, feed)
-    if 0.85 <= ratio <= 1.15:
-        return "social_post"               # ~Cuadrado (1:1)
-    if 0.45 <= ratio < 0.65:
-        return "social_story"              # Portrait alto (9:16, ~0.56)
-    if 0.65 <= ratio < 0.85:
-        return "afiche_tienda"             # Portrait estándar (3:4, 5:7)
-    if ratio < 0.45:
-        return "social_story"              # Muy alto, tratar como story
-    return "tactico_pop"
+        return None
+    return ratio_category(dim[0], dim[1])
 
 
 def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:

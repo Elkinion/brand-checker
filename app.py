@@ -6,11 +6,12 @@ from pathlib import Path
 import streamlit as st
 
 from modules.auth import require_login, logout_button
-from modules.config import KV_TYPES, AUTO_KV_TYPE, missing_secrets
+from modules.config import KV_TYPES, KV_TYPE_RATIOS, missing_secrets
 from modules.pipeline import analyze_images_parallel
 from modules.brand_rules import BRAND_PALETTE
 from modules.improvements import compute_improvements
 from modules.pdf_report import build_pdf
+from modules.utils import ratio_category
 
 st.set_page_config(
     page_title="Brand Checker · Tigo",
@@ -167,6 +168,31 @@ def _file_to_data_uri(f) -> str:
     return f"data:{mime};base64,{base64.b64encode(data).decode()}"
 
 
+def _file_ratio_category(f) -> str | None:
+    from io import BytesIO
+    from PIL import Image
+    try:
+        data = f.getvalue() if hasattr(f, "getvalue") else Path(f).read_bytes()
+        with Image.open(BytesIO(data)) as img:
+            w, h = img.size
+        return ratio_category(w, h)
+    except Exception:
+        return None
+
+
+def _kv_options_for_file(f) -> tuple[list[str], list[str]]:
+    """Devuelve (labels, values) del dropdown filtrados por ratio del archivo."""
+    cat = _file_ratio_category(f)
+    all_items = list(KV_TYPES.items())
+    if not cat:
+        return [k for k, _ in all_items], [v for _, v in all_items]
+    filtered = [(k, v) for k, v in all_items
+                if cat in KV_TYPE_RATIOS.get(v, set())]
+    if not filtered:
+        filtered = all_items
+    return [k for k, _ in filtered], [v for _, v in filtered]
+
+
 def _path_to_data_uri(path: str) -> str:
     p = Path(path)
     ext = p.suffix.lower().lstrip(".")
@@ -253,30 +279,35 @@ with left:
                 )
             st.markdown(grid_html + "</div>", unsafe_allow_html=True)
 
-            # Per-file type selectors (compact list)
+            # Per-file type selectors (filtered by image ratio)
             st.markdown('<div style="margin-top:.5rem;"></div>', unsafe_allow_html=True)
-            kv_labels = list(KV_TYPES.keys())
-            kv_values = list(KV_TYPES.values())
             for idx, f in enumerate(files):
-                default_type = st.session_state.kv_types_by_name.get(f.name, AUTO_KV_TYPE)
+                labels, values = _kv_options_for_file(f)
+                stored = st.session_state.kv_types_by_name.get(f.name)
                 try:
-                    default_idx = kv_values.index(default_type)
+                    default_idx = values.index(stored) if stored in values else 0
                 except ValueError:
                     default_idx = 0
                 sel = st.selectbox(
                     f.name,
-                    options=kv_labels,
+                    options=labels,
                     index=default_idx,
                     key=f"kv_type_{f.name}_{idx}",
                 )
-                st.session_state.kv_types_by_name[f.name] = KV_TYPES[sel]
+                # Map back label -> value using filtered list, not global KV_TYPES.
+                st.session_state.kv_types_by_name[f.name] = values[labels.index(sel)]
 
-            # Bulk apply
-            with st.expander("Aplicar el mismo tipo a todas"):
-                bulk_sel = st.selectbox("Tipo", kv_labels, key="bulk_type_sel")
+            # Bulk apply (only files whose ratio is compatible receive the type)
+            with st.expander("Aplicar el mismo tipo a todas (compatibles)"):
+                bulk_labels = list(KV_TYPES.keys())
+                bulk_sel = st.selectbox("Tipo", bulk_labels, key="bulk_type_sel")
                 if st.button("Aplicar a todas", width="stretch"):
+                    target_value = KV_TYPES[bulk_sel]
                     for f in files:
-                        st.session_state.kv_types_by_name[f.name] = KV_TYPES[bulk_sel]
+                        cat = _file_ratio_category(f)
+                        allowed = KV_TYPE_RATIOS.get(target_value, set())
+                        if cat is None or cat in allowed:
+                            st.session_state.kv_types_by_name[f.name] = target_value
                     st.rerun()
 
             # Analyze button
@@ -334,16 +365,11 @@ def _render_score_card(result: dict) -> None:
     total_pct = (sc.get("total_pct", 0) or 0) * 100
     obj_pct = (sc.get("obj_pct", 0) or 0) * 100
     subj_pct = (sc.get("subj_pct", 0) or 0) * 100
-    auto_chip = ""
-    if result.get("auto_detected"):
-        auto_chip = (f'<span class="bc-auto-chip">Auto → {result.get("kv_type","")}'
-                     f'</span>')
     st.markdown(
         f'<div class="bc-score-pill">'
         f'<div class="bc-score-main">'
         f'<span class="bc-score-number">{total_pct:.0f}%</span>'
         f'<span class="bc-score-label">Score total</span>'
-        f'{auto_chip}'
         f'</div>'
         f'<div class="bc-score-sub">'
         f'<span>Objetivo <b>{obj_pct:.0f}%</b></span>'
