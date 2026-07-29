@@ -6,7 +6,7 @@ from pathlib import Path
 import streamlit as st
 
 from modules.auth import require_login, logout_button
-from modules.config import KV_TYPES, missing_secrets
+from modules.config import KV_TYPES, AUTO_KV_TYPE, missing_secrets
 from modules.pipeline import analyze_images_parallel
 from modules.brand_rules import BRAND_PALETTE
 from modules.improvements import compute_improvements
@@ -74,15 +74,22 @@ footer { visibility: hidden; }
 .bc-badge.bc-abcd-c { background:#fbcfe8; color:#831843; }
 .bc-badge.bc-abcd-d { background:#bbf7d0; color:#064e3b; }
 
-/* Score */
-.bc-score-wrap { text-align:center; padding:1.5rem;
+/* Score — compact horizontal pill */
+.bc-score-pill { display:flex; align-items:center; justify-content:space-between;
+                 gap:1rem; padding:.55rem 1rem;
                  background:linear-gradient(135deg,#00377B 0%, #1e5bb8 100%);
-                 color:#fff; border-radius:12px; margin-bottom:1rem; }
-.bc-score-number { font-size:3.5rem; font-weight:800; line-height:1; }
-.bc-score-label  { font-size:.85rem; opacity:.9; margin-top:.4rem;
-                   text-transform:uppercase; letter-spacing:.05em; }
-.bc-score-sub    { display:flex; justify-content:center; gap:1.4rem;
-                   margin-top:.6rem; font-size:.85rem; opacity:.92; }
+                 color:#fff; border-radius:10px; margin-bottom:.6rem;
+                 box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.bc-score-pill .bc-score-main { display:flex; align-items:baseline; gap:.4rem; }
+.bc-score-pill .bc-score-number { font-size:1.6rem; font-weight:800; line-height:1; }
+.bc-score-pill .bc-score-label  { font-size:.7rem; opacity:.9;
+                                  text-transform:uppercase; letter-spacing:.06em; }
+.bc-score-pill .bc-score-sub    { display:flex; gap:1rem;
+                                  font-size:.78rem; opacity:.92; }
+.bc-score-pill .bc-score-sub b  { font-weight:700; }
+.bc-auto-chip { display:inline-block; padding:.15rem .5rem; border-radius:999px;
+                background:#eef2ff; color:#3730a3; font-size:.7rem;
+                font-weight:600; margin-left:.4rem; }
 
 /* Swatches */
 .bc-swatch-row { display:flex; flex-wrap:wrap; gap:.5rem; margin-top:.5rem; }
@@ -251,7 +258,7 @@ with left:
             kv_labels = list(KV_TYPES.keys())
             kv_values = list(KV_TYPES.values())
             for idx, f in enumerate(files):
-                default_type = st.session_state.kv_types_by_name.get(f.name, "tactico_pop")
+                default_type = st.session_state.kv_types_by_name.get(f.name, AUTO_KV_TYPE)
                 try:
                     default_idx = kv_values.index(default_type)
                 except ValueError:
@@ -327,13 +334,20 @@ def _render_score_card(result: dict) -> None:
     total_pct = (sc.get("total_pct", 0) or 0) * 100
     obj_pct = (sc.get("obj_pct", 0) or 0) * 100
     subj_pct = (sc.get("subj_pct", 0) or 0) * 100
+    auto_chip = ""
+    if result.get("auto_detected"):
+        auto_chip = (f'<span class="bc-auto-chip">Auto → {result.get("kv_type","")}'
+                     f'</span>')
     st.markdown(
-        f'<div class="bc-score-wrap">'
-        f'<div class="bc-score-number">{total_pct:.0f}%</div>'
-        f'<div class="bc-score-label">Score total</div>'
+        f'<div class="bc-score-pill">'
+        f'<div class="bc-score-main">'
+        f'<span class="bc-score-number">{total_pct:.0f}%</span>'
+        f'<span class="bc-score-label">Score total</span>'
+        f'{auto_chip}'
+        f'</div>'
         f'<div class="bc-score-sub">'
-        f'<span>Objetivo: <b>{obj_pct:.0f}%</b></span>'
-        f'<span>Subjetivo: <b>{subj_pct:.0f}%</b></span>'
+        f'<span>Objetivo <b>{obj_pct:.0f}%</b></span>'
+        f'<span>Subjetivo <b>{subj_pct:.0f}%</b></span>'
         f'</div></div>',
         unsafe_allow_html=True,
     )
@@ -456,13 +470,13 @@ def _render_result(result: dict) -> None:
         )
         return
 
-    # Preview + score card at the top
+    # Score pill on top, then preview
+    _render_score_card(result)
     uri = _path_to_data_uri(result["path"])
     st.markdown(
         f'<div class="bc-preview-wrap"><img src="{uri}" alt="{result["name"]}"/></div>',
         unsafe_allow_html=True,
     )
-    _render_score_card(result)
 
     # PDF download
     try:

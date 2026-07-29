@@ -6,7 +6,8 @@ from typing import Callable
 
 import httpx
 
-from modules.config import REQUEST_TIMEOUT
+from modules.config import REQUEST_TIMEOUT, AUTO_KV_TYPE
+from modules.utils import detect_kv_type_from_image
 from modules.cv_analysis import analyze_image
 from modules.ai_analysis import analyze_subjective
 from modules.logo_matcher import load_reference_logos, check_logo
@@ -56,8 +57,16 @@ def analyze_one_image(image_path: str | Path, kv_type: str,
     """
     progress_cb = _safe(progress_cb)
     name = Path(image_path).name
+
+    resolved_kv_type = kv_type
+    detected_kv_type: str | None = None
+    if kv_type == AUTO_KV_TYPE or not kv_type:
+        detected_kv_type = detect_kv_type_from_image(image_path)
+        resolved_kv_type = detected_kv_type
+        progress_cb(f"Auto: {name} → {detected_kv_type}")
+
     progress_cb(f"Vision: {name}…")
-    cv = analyze_image(image_path, client=client, kv_type=kv_type)
+    cv = analyze_image(image_path, client=client, kv_type=resolved_kv_type)
 
     refs = load_reference_logos()
     subj = None
@@ -67,7 +76,7 @@ def analyze_one_image(image_path: str | Path, kv_type: str,
     with ThreadPoolExecutor(max_workers=max(2, min(12, max_workers)),
                             initializer=_thread_init, initargs=(ctx,),
                             thread_name_prefix=f"inner-{name}") as pool:
-        futs = {pool.submit(analyze_subjective, image_path, cv, kv_type, client): "subj"}
+        futs = {pool.submit(analyze_subjective, image_path, cv, resolved_kv_type, client): "subj"}
         for ref in refs or []:
             futs[pool.submit(check_logo, image_path, ref, client)] = ("logo", ref)
 
@@ -96,13 +105,15 @@ def analyze_one_image(image_path: str | Path, kv_type: str,
         if cv.get("additional_area") is None and areas.get("propuesta_area_pct") is not None:
             cv["additional_area"] = areas["propuesta_area_pct"]
 
-    obj_results = evaluate_objective_rules(cv, kv_type)
+    obj_results = evaluate_objective_rules(cv, resolved_kv_type)
     score = compute_total_score(obj_results, subj)
 
     return {
         "name": name,
         "path": str(image_path),
-        "kv_type": kv_type,
+        "kv_type": resolved_kv_type,
+        "kv_type_requested": kv_type,
+        "auto_detected": detected_kv_type is not None,
         "cv": cv,
         "obj_results": obj_results,
         "subj_data": subj,

@@ -20,19 +20,19 @@ APP_PASSWORD_HASH = _get("APP_PASSWORD_HASH", "")
 LOGOS_DIR = "static/logos"
 REQUEST_TIMEOUT = 120
 
+AUTO_KV_TYPE = "auto"
+
 KV_TYPES: dict[str, str] = {
-    "Táctico POP": "tactico_pop",
+    "Auto (detectar por ratio)": AUTO_KV_TYPE,
+    "Social — Post (1:1)": "social_post",
+    "Social — Story (9:16)": "social_story",
+    "Social — Feed (horiz.)": "social_feed",
+    "OOH / Valla exterior": "ooh_valla",
     "KV con Fotografía": "kv_fotografia",
-    "ATL Full Fotográfico": "atl_full_foto",
-    "ATL Background Color": "atl_background_color",
-    "Social Media — Post (1:1)": "social_post",
-    "Social Media — Story (9:16)": "social_story",
-    "Social Media — Feed (horiz.)": "social_feed",
-    "Afiche Fotográfico Tienda": "afiche_foto_tienda",
     "Afiche Tienda": "afiche_tienda",
     "Afiche Promo Tienda": "afiche_promo_tienda",
-    "OOH / Valla exterior": "ooh_valla",
-    "Foto de la calle (extraer valla)": "street",
+    "ATL": "atl_full_foto",
+    "Táctico POP": "tactico_pop",
 }
 
 def missing_secrets() -> list[str]:
