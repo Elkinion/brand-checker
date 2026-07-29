@@ -31,6 +31,7 @@ KV_TYPES: dict[str, str] = {
     "Afiche Fotográfico Tienda": "afiche_foto_tienda",
     "Afiche Tienda": "afiche_tienda",
     "Afiche Promo Tienda": "afiche_promo_tienda",
+    "OOH / Valla exterior": "ooh_valla",
     "Foto de la calle (extraer valla)": "street",
 }
 

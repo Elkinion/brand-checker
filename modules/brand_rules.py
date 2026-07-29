@@ -13,7 +13,7 @@ BRAND_PALETTE: dict[str, str] = {
     "bright_blue": "#44C8F5",
     "yellow":      "#FFC200",
     "white":       "#FFFFFF",
-    "magenta":     "#FF0064",
+    "magenta":     "#ED1966",
     "orange":      "#FB561E",
     "green":       "#00F52D",
     "lime_green":  "#BEFF00",
@@ -35,15 +35,43 @@ BRAND_PALETTE_DIGITAL: dict[str, str] = {
     "bright_blue": "#44C8F5",
     "yellow":      "#FFC200",
     "darker_blue": "#00005A",
-    "magenta":     "#FF0064",
+    "magenta":     "#ED1966",
     "green":       "#00F52D",
     "lime_green":  "#BEFF00",
+}
+
+# OOH (out-of-home / vallas): derived from the CMYK spec in the brand manual.
+# Naive CMYK->sRGB: R=255*(1-C)*(1-K), G=255*(1-M)*(1-K), B=255*(1-Y)*(1-K).
+# Values come from the "CMYK" column of the official brand palette.
+BRAND_PALETTE_OOH: dict[str, str] = {
+    "main_blue":   "#0020D9",  # C100 M85 Y0  K15
+    "bright_blue": "#66FFF2",  # C60  M0  Y5  K0
+    "yellow":      "#FFBF00",  # C0   M25 Y100 K0
+    "darker_blue": "#000D80",  # C100 M90 Y0  K50
+    "magenta":     "#FF0099",  # C0   M100 Y40 K0
+    "white":       "#FFFFFF",
 }
 
 PRIMARY_COLORS   = {"main_blue", "darker_blue", "bright_blue", "yellow", "white"}
 SECONDARY_COLORS = {"magenta", "orange", "green", "lime_green"}
 
 COLOR_MATCH_THRESHOLD = 80
+# Print/photograph variance is larger — loosen tolerance for OOH.
+COLOR_MATCH_THRESHOLD_OOH = 110
+
+
+def get_palette_for_gama(gama: str) -> dict[str, str]:
+    if gama == "ooh":
+        return BRAND_PALETTE_OOH
+    if gama == "impresos":
+        return BRAND_PALETTE_PRINT
+    if gama == "digitales":
+        return BRAND_PALETTE_DIGITAL
+    return BRAND_PALETTE
+
+
+def get_threshold_for_gama(gama: str) -> float:
+    return COLOR_MATCH_THRESHOLD_OOH if gama == "ooh" else COLOR_MATCH_THRESHOLD
 BRAND_LOGO_NAMES = ["Tigo"]
 REQUIRED_DISCLAIMERS = ["Términos y condiciones", "Aplican restricciones"]
 
@@ -76,7 +104,7 @@ class TextLimit:
 @dataclass
 class Profile:
     label: str
-    gama: str  # "impresos" | "digitales" | "ambos"
+    gama: str  # "impresos" | "digitales" | "ambos" | "ooh"
     foto: Range | None = None
     oferta_target: float | None = None
     oferta_modulos_max: int | None = None
@@ -179,6 +207,16 @@ PIECE_PROFILES: dict[str, Profile] = {
         secundario=TextLimit(words=5, lines=2),
         legal=TextLimit(chars=60, lines=2),
         flags=("marco_bu",),
+        varia_tipografia=True,
+    ),
+    "ooh_valla": Profile(
+        label="OOH / Valla exterior", gama="ooh",
+        foto=Range(0.40, 0.80),
+        oferta_target=0.35, oferta_modulos_max=3,
+        propuesta_max=0.20,
+        titular=TextLimit(words=8, lines=2),
+        secundario=TextLimit(words=5, lines=2),
+        legal=TextLimit(chars=60, lines=2),
         varia_tipografia=True,
     ),
 }
@@ -440,11 +478,12 @@ def _rule_gama_coherence(cv: dict, profile: Profile) -> RuleResult:
     colors = cv.get("dominant_colors") or []
     if not colors:
         return RuleResult("partial", "—", "Sin colores dominantes para evaluar gama.")
+    threshold = get_threshold_for_gama(profile.gama)
     magenta_frac = sum(
         (c.get("pixel_fraction") or 0)
         for c in colors
         if c.get("nearest_palette") == "magenta"
-        and (c.get("nearest_distance") or 1e9) < COLOR_MATCH_THRESHOLD
+        and (c.get("nearest_distance") or 1e9) < threshold
     )
     pct = round(magenta_frac * 100, 1)
     if profile.gama == "impresos":
@@ -456,6 +495,9 @@ def _rule_gama_coherence(cv: dict, profile: Profile) -> RuleResult:
                               "Magenta presente en pieza impresa; verificar que sea puntual (tag Flex).")
         return RuleResult("pass", f"{pct}% magenta",
                           "Sin uso proporcional de magenta en pieza impresa.")
+    if profile.gama == "ooh":
+        return RuleResult("pass", f"{pct}% magenta",
+                          "Gama OOH (CMYK): paleta impresa con magenta permitido como secundario.")
     return RuleResult("pass", f"{pct}% magenta",
                       "Gama digital: el magenta es válido como acento secundario.")
 

@@ -7,6 +7,7 @@ from modules.utils import image_to_base64, image_dimensions
 from modules.brand_rules import (
     distances_to_palette, COLOR_MATCH_THRESHOLD,
     PRIMARY_COLORS, SECONDARY_COLORS,
+    get_profile, get_palette_for_gama, get_threshold_for_gama,
 )
 
 CV_ENDPOINT = "https://vision.googleapis.com/v1/images:annotate"
@@ -60,9 +61,19 @@ def call_cv_api(image_path: str | Path, client: httpx.Client | None = None) -> d
     return r.json()
 
 
-def process_cv_response(raw: dict, image_dim: tuple[int, int] | None = None) -> dict:
+def process_cv_response(raw: dict, image_dim: tuple[int, int] | None = None,
+                        kv_type: str | None = None) -> dict:
     responses = raw.get("responses") or [{}]
     r = responses[0]
+
+    if kv_type:
+        profile = get_profile(kv_type)
+        palette = get_palette_for_gama(profile.gama)
+        threshold = get_threshold_for_gama(profile.gama)
+    else:
+        from modules.brand_rules import BRAND_PALETTE
+        palette = BRAND_PALETTE
+        threshold = COLOR_MATCH_THRESHOLD
 
     # --- Logos ---
     logos: list[dict] = []
@@ -94,10 +105,10 @@ def process_cv_response(raw: dict, image_dim: tuple[int, int] | None = None) -> 
         gg = int(col.get("green", 0) or 0)
         bb = int(col.get("blue", 0) or 0)
         hex_str = "#{:02X}{:02X}{:02X}".format(rr, gg, bb)
-        dists = distances_to_palette(hex_str)
+        dists = distances_to_palette(hex_str, palette)
         nearest_name = min(dists, key=dists.get)
         nearest_dist = dists[nearest_name]
-        is_brand = nearest_dist < COLOR_MATCH_THRESHOLD
+        is_brand = nearest_dist < threshold
         dominant_colors.append({
             "hex": hex_str,
             "rgb": (rr, gg, bb),
@@ -135,7 +146,8 @@ def process_cv_response(raw: dict, image_dim: tuple[int, int] | None = None) -> 
     }
 
 
-def analyze_image(image_path: str | Path, client: httpx.Client | None = None) -> dict:
+def analyze_image(image_path: str | Path, client: httpx.Client | None = None,
+                  kv_type: str | None = None) -> dict:
     dim = image_dimensions(image_path)
     raw = call_cv_api(image_path, client=client)
-    return process_cv_response(raw, image_dim=dim)
+    return process_cv_response(raw, image_dim=dim, kv_type=kv_type)

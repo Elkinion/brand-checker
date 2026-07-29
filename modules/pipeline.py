@@ -57,7 +57,7 @@ def analyze_one_image(image_path: str | Path, kv_type: str,
     progress_cb = _safe(progress_cb)
     name = Path(image_path).name
     progress_cb(f"Vision: {name}…")
-    cv = analyze_image(image_path, client=client)
+    cv = analyze_image(image_path, client=client, kv_type=kv_type)
 
     refs = load_reference_logos()
     subj = None
