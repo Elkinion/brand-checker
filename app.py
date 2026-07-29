@@ -9,6 +9,8 @@ from modules.auth import require_login, logout_button
 from modules.config import KV_TYPES, missing_secrets
 from modules.pipeline import analyze_images_parallel
 from modules.brand_rules import BRAND_PALETTE
+from modules.improvements import compute_improvements
+from modules.pdf_report import build_pdf
 
 st.set_page_config(
     page_title="Brand Checker · Tigo",
@@ -413,6 +415,38 @@ def _render_ocr(result: dict) -> None:
     st.markdown(f'<div class="bc-ocr">{text}</div>', unsafe_allow_html=True)
 
 
+def _render_improvements(result: dict) -> None:
+    items = compute_improvements(result)
+    if not items:
+        st.success("No hay mejoras pendientes — el score está en su máximo.")
+        return
+
+    st.markdown(
+        '<p class="bc-detail" style="margin-top:0;">Ordenado por impacto en el '
+        'score total (puntos porcentuales que subirías al llevarlo a nota máxima).</p>',
+        unsafe_allow_html=True,
+    )
+    html = ""
+    for i, it in enumerate(items, 1):
+        kind_badge = ("bc-badge partial" if it["kind"] == "subj" else "bc-badge fail")
+        html += (
+            f'<div class="bc-card">'
+            f'<div style="display:flex;justify-content:space-between;'
+            f'align-items:center;gap:.5rem;">'
+            f'<h5>{i}. {it["label"]}</h5>'
+            f'<span style="font-weight:700;color:#065f46;">+{it["gain_pp"]:.1f} pts</span>'
+            f'</div>'
+            f'<div style="margin:.2rem 0 .4rem 0;">'
+            f'<span class="{kind_badge}">{it["kind"].upper()}</span>'
+            f'<span style="margin-left:.5rem;color:#6b7280;font-size:.78rem;">'
+            f'Estado actual: <b>{it["current"]}</b></span>'
+            f'</div>'
+            f'<p class="bc-detail"><b>Consejo:</b> {it["advice"]}</p>'
+            f'</div>'
+        )
+    st.markdown(html, unsafe_allow_html=True)
+
+
 def _render_result(result: dict) -> None:
     if result.get("error"):
         st.markdown(
@@ -430,14 +464,31 @@ def _render_result(result: dict) -> None:
     )
     _render_score_card(result)
 
-    tabs = st.tabs(["Objetivo", "Subjetivo", "Colores", "Texto (OCR)"])
+    # PDF download
+    try:
+        pdf_bytes = build_pdf(result)
+        pdf_name = f"{Path(result['name']).stem}_brand_check.pdf"
+        st.download_button(
+            "📄 Descargar reporte PDF",
+            data=pdf_bytes,
+            file_name=pdf_name,
+            mime="application/pdf",
+            width="stretch",
+            key=f"pdf_dl_{result['name']}",
+        )
+    except Exception as e:
+        st.warning(f"No se pudo generar el PDF: {e}")
+
+    tabs = st.tabs(["Mejoras", "Objetivo", "Subjetivo", "Colores", "Texto (OCR)"])
     with tabs[0]:
-        _render_objective(result)
+        _render_improvements(result)
     with tabs[1]:
-        _render_subjective(result)
+        _render_objective(result)
     with tabs[2]:
-        _render_colors(result)
+        _render_subjective(result)
     with tabs[3]:
+        _render_colors(result)
+    with tabs[4]:
         _render_ocr(result)
 
 
