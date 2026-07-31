@@ -26,8 +26,8 @@ st.set_page_config(
 
 # ---------- Styles (Tigo Design System v2.0 tokens) ----------
 _STYLES = """
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap" rel="stylesheet">
 <style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800;9..40,900&display=swap');
 /* ---------- Design tokens (from Tigo DS v2.0) ---------- */
 :root {
   --blue-900:#00005A; --blue-500:#001EB4; --blue-400:#0026E5; --blue-50:#E6F1FF;
