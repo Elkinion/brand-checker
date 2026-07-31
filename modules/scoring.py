@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Iterable
 
-STATUS_VALUE = {"pass": 1.0, "partial": 0.5, "fail": 0.0}
+STATUS_VALUE = {"pass": 1.0, "partial": 0.35, "fail": 0.0}
 
 
 def objective_pct(obj_results: Iterable[dict]) -> tuple[float, float]:
@@ -25,7 +25,7 @@ def subjective_pct(subj_results: Iterable[dict]) -> tuple[float, float]:
             continue
         w = float(r.get("weight") or 1)
         total_w += w
-        got += w * (float(score) / 5.0)
+        got += w * max(0.0, (float(score) - 1.0) / 4.0)
     return (got / total_w if total_w else 0.0), total_w
 
 

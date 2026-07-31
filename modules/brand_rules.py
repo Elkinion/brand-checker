@@ -326,9 +326,9 @@ def _rule_brand_colors_usage(cv: dict, profile: Profile) -> RuleResult:
     val = f"P:{np_} / S:{ns}"
     if np_ >= 2 and ns <= 1:
         return RuleResult("pass", val, f"Uso correcto de la paleta. {detail}")
-    if np_ == 0 or ns >= 3:
-        return RuleResult("fail", val, f"Uso incorrecto de la paleta. {detail}")
-    if np_ == 1 or ns == 2:
+    if np_ == 0 or ns >= 3 or np_ == 1:
+        return RuleResult("fail", val, f"Uso incorrecto de la paleta (mínimo 2 primarios, máx 1 secundario). {detail}")
+    if ns == 2:
         return RuleResult("partial", val, f"Uso parcial de la paleta. {detail}")
     return RuleResult("partial", val, f"Uso aceptable pero mejorable. {detail}")
 
@@ -360,7 +360,6 @@ def _rule_disclaimer(cv: dict, profile: Profile) -> RuleResult:
     txt = txt_raw.lower()
     hits = [d for d in REQUIRED_DISCLAIMERS if d.lower() in txt]
 
-    legal_note = ""
     if hits:
         matched_lines = [
             line for line in txt_raw.split("\n")
@@ -368,12 +367,13 @@ def _rule_disclaimer(cv: dict, profile: Profile) -> RuleResult:
         ]
         n_chars = sum(len(l) for l in matched_lines) + max(0, len(matched_lines) - 1)
         if n_chars > max_chars or len(matched_lines) > max_lines:
-            legal_note = (
-                f" Nota: el texto legal es extenso ({n_chars} car., "
-                f"{len(matched_lines)} línea(s); máx {max_chars} / {max_lines})."
+            return RuleResult(
+                "partial", f"{len(hits)} encontrado(s)",
+                f"Disclaimer detectado pero excede el límite legal "
+                f"({n_chars} car., {len(matched_lines)} línea(s); máx {max_chars}/{max_lines}).",
             )
         return RuleResult("pass", f"{len(hits)} encontrado(s)",
-                          "Se detectó disclaimer legal en el texto." + legal_note)
+                          "Se detectó disclaimer legal en el texto.")
     return RuleResult("fail", "0", "No se encontró disclaimer legal requerido.")
 
 
@@ -430,7 +430,7 @@ def _rule_photo_area(cv: dict, profile: Profile) -> RuleResult:
         return RuleResult("partial", "—",
                           f"Dato no disponible. Rango esperado: {lo*100:.0f}–{hi*100:.0f}%.")
     pct_txt = f"{round(area * 100, 1)}%"
-    soft_lo = max(0.0, lo - 0.10)
+    soft_lo = max(0.0, lo - 0.06)
     if lo <= area <= hi:
         return RuleResult("pass", pct_txt,
                           f"La fotografía ocupa el área recomendada ({lo*100:.0f}–{hi*100:.0f}%).")
@@ -451,7 +451,7 @@ def _rule_offer_area(cv: dict, profile: Profile) -> RuleResult:
     pct_txt = f"{round(area * 100, 1)}%"
     if lo <= area <= hi:
         return RuleResult("pass", pct_txt, f"Bloque de oferta en target (~{target*100:.0f}%).")
-    if (lo - 0.10) <= area < lo:
+    if (lo - 0.06) <= area < lo:
         return RuleResult("partial", pct_txt,
                           f"Bloque de oferta algo pequeño (target ~{target*100:.0f}%).")
     return RuleResult("fail", pct_txt, f"Fuera del rango esperado (~{target*100:.0f}%).")
@@ -468,7 +468,7 @@ def _rule_propuesta_valor_area(cv: dict, profile: Profile) -> RuleResult:
     if area <= max_prop:
         return RuleResult("pass", pct_txt,
                           f"Propuesta de valor dentro del máximo ({max_prop*100:.0f}%).")
-    if area <= max_prop + 0.05:
+    if area <= max_prop + 0.03:
         return RuleResult("partial", pct_txt,
                           f"Excede ligeramente el máximo ({max_prop*100:.0f}%).")
     return RuleResult("fail", pct_txt, f"Ocupa demasiado espacio (>{max_prop*100:.0f}%).")
@@ -487,10 +487,10 @@ def _rule_gama_coherence(cv: dict, profile: Profile) -> RuleResult:
     )
     pct = round(magenta_frac * 100, 1)
     if profile.gama == "impresos":
-        if magenta_frac > 0.05:
+        if magenta_frac > 0.03:
             return RuleResult("fail", f"{pct}% magenta",
                               "El magenta es color digital: no debe usarse como proporcional en impresos (sólo puntual, ej. tag Flex).")
-        if magenta_frac > 0.01:
+        if magenta_frac > 0.005:
             return RuleResult("partial", f"{pct}% magenta",
                               "Magenta presente en pieza impresa; verificar que sea puntual (tag Flex).")
         return RuleResult("pass", f"{pct}% magenta",
