@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Capa_2" data-name="Capa 2" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 438.29 438.42">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-2 {
+        font-family: DMSans-Regular, 'DM Sans';
+      }
+
+      .cls-2, .cls-3, .cls-4 {
+        fill: #fff;
+      }
+
+      .cls-2, .cls-4 {
+        font-size: 115.84px;
+      }
+
+      .cls-5 {
+        clip-path: url(#clippath-1);
+      }
+
+      .cls-4 {
+        font-family: DMSans-ExtraBold, 'DM Sans';
+        font-weight: 700;
+      }
+
+      .cls-6 {
+        fill: #00c8ff;
+      }
+    </style>
+    <clipPath id="clippath-1">
+      <path class="cls-1" d="M309.41,219.81c0-23.76-8.4-43.35-25.19-58.74-16.78-15.37-38.47-23.08-65.03-23.08s-48.25,7.71-65.04,23.08c-16.78,15.39-25.17,34.98-25.17,58.74s8.4,42.48,25.17,58.21c11.11,10.42,24.41,17.31,39.8,20.83-5.6,15.05-16.28,28.86-35.72,37.68,0,0,116.43-10.72,144.12-83.33h0c4.66-10.12,7.06-21.23,7.06-33.39Z"/>
+    </clipPath>
+  </defs>
+  <g id="Capa_1-2" data-name="Capa 1">
+    <g>
+      <text class="cls-2" transform="translate(139.4 322.1) rotate(-120.27)"><tspan x="0" y="0">M</tspan></text>
+      <text class="cls-2" transform="translate(94.13 239.59) rotate(-81.65)"><tspan x="0" y="0">A</tspan></text>
+      <text class="cls-2" transform="translate(105.62 165.63) rotate(-48.82)"><tspan x="0" y="0">R</tspan></text>
+      <text class="cls-2" transform="translate(149.76 114.73) rotate(-17.95)"><tspan x="0" y="0">K</tspan></text>
+      <text class="cls-2" transform="translate(212.79 94.25) rotate(12.18)"><tspan x="0" y="0">E</tspan></text>
+      <text class="cls-4" transform="translate(275.73 106.95) rotate(42.83)"><tspan x="0" y="0">T</tspan></text>
+      <text class="cls-4" transform="translate(327.57 151.56) rotate(77.03)"><tspan x="0" y="0">H</tspan></text>
+      <text class="cls-4" transform="translate(340.37 231.87) rotate(103.46)"><tspan x="0" y="0">I</tspan></text>
+      <text class="cls-4" transform="translate(338.72 265.1) rotate(130.4)"><tspan x="0" y="0">N</tspan></text>
+      <text class="cls-4" transform="translate(284.89 327.56) rotate(166.36)"><tspan x="0" y="0">K</tspan></text>
+      <path class="cls-6" d="M309.41,219.81c0-23.76-8.4-43.35-25.19-58.74-16.78-15.37-38.47-23.08-65.03-23.08s-48.25,7.71-65.04,23.08c-16.78,15.39-25.17,34.98-25.17,58.74s8.4,42.48,25.17,58.21c11.11,10.42,24.41,17.31,39.8,20.83-5.6,15.05-16.28,28.86-35.72,37.68,0,0,116.43-10.72,144.12-83.33h0c4.66-10.12,7.06-21.23,7.06-33.39Z"/>
+      <g class="cls-5">
+        <path class="cls-3" d="M229.24,174.25c7.48-17.62,14.63-35.44,20.01-54.22-13.04,14.55-24.32,30.08-35.25,45.8-5.27,7.97-10.78,15.8-15.68,23.97-5.03,8.1-10.14,16.16-14.87,24.42l-9.94,17.36,20.49.52c6.05.15,12.11.23,18.16.24-1.21,2.49-2.42,4.97-3.63,7.46-4.3,8.5-8.02,17.33-11.95,26.04-7.49,17.62-14.62,35.44-19.98,54.24,13.06-14.54,24.35-30.07,35.28-45.78,5.28-7.96,10.77-15.81,15.68-23.98,5.04-8.09,10.13-16.16,14.86-24.43l9.98-17.42-20.55-.49c-6.07-.14-12.13-.21-18.2-.22,1.21-2.49,2.42-4.99,3.64-7.48,4.3-8.5,8-17.34,11.95-26.04Z"/>
+      </g>
+    </g>
+  </g>
+</svg>
